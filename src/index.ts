@@ -214,21 +214,7 @@ export function AddToHomeScreen(
     // close the modal if the user clicks outside of the modal contents
     const container = document.querySelector(".adhs-container");
     if (container) {
-      container.classList.remove("visible");
-      setTimeout(
-        () => {
-          container.remove();
-          if (closeEventListener) {
-            window.removeEventListener("touchstart", closeEventListener);
-            window.removeEventListener("click", closeEventListener);
-            closeEventListener = null;
-          }
-        },
-        // If the dialog is hidden in 300ms in Safari, the browser reports a second
-        // click event on an underlying DOM node. If you wait a bit longer this
-        // does not happen
-        isDeviceIOS() ? 500 : 300
-      );
+      container.dispatchEvent(new Event('click'));
     }
   }
 
@@ -412,8 +398,7 @@ export function AddToHomeScreen(
     container.classList.add("adhs-container");
 
     if (include_modal) {
-      var containerInnerHTML = _genModalStart() + _genModalEnd();
-      container.innerHTML = containerInnerHTML;
+      container.innerHTML = _genModalStart() + _genModalEnd();
     }
 
     return container;
@@ -421,7 +406,7 @@ export function AddToHomeScreen(
 
   function _addContainerToBody(container: HTMLElement) {
     document.body.appendChild(container);
-    _registerCloseListener();
+    _registerCloseListener(container);
     setTimeout(() => {
       container.classList.add("visible");
     }, 50);
@@ -868,21 +853,24 @@ export function AddToHomeScreen(
     container.classList.add("adhs-desktop", "adhs-desktop-safari");
   }
 
-  function _registerCloseListener() {
-    closeEventListener = (e: Event) => {
-      var modal = document
-        .getElementsByClassName("adhs-container")[0]
-        .getElementsByClassName("adhs-modal")[0];
-      if (!modal.contains(e.target as Node)) {
-        closeModal();
-      }
-    };
+  function _registerCloseListener(element: HTMLElement) {
+    const outer = document.querySelector('.adhs-container');
 
-    // enclose in setTimeout to prevent firing when this class used with an onclick
-    setTimeout(() => {
-      window.addEventListener("touchstart", closeEventListener!);
-      window.addEventListener("click", closeEventListener!);
-    }, 50);
+    element.addEventListener("click", function (e) {
+      if (e.target === outer) { // only outer
+        element.classList.remove("visible");
+
+        setTimeout(
+            () => {
+              element.remove();
+            },
+            // If the dialog is hidden in 300ms in Safari, the browser reports a second
+            // click event on an underlying DOM node. If you wait a bit longer this
+            // does not happen
+            isDeviceIOS() ? 500 : 300
+        );
+      }
+    });
   }
 
   function clearModalDisplayCount() {
